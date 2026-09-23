@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoveInSync — Office Shuttle Booking System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0b0f19;
+      --bg-card: rgba(18, 24, 38, 0.85);
+      --bg-card-hover: rgba(26, 34, 52, 0.95);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(99, 102, 241, 0.5);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.25);
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Background glow accents */
+    .bg-glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      filter: blur(140px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.15;
+    }
+    .glow-1 { top: -100px; left: -100px; background: var(--primary); }
+    .glow-2 { bottom: -100px; right: -100px; background: var(--accent); }
+
+    .app-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 32px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .brand-title h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(to right, #fff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-title p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-live {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-live::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.2); }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      outline: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .btn-danger:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    /* Grid Layout */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 960px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Route Visualizer Timeline */
+    .route-timeline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      padding: 30px 10px;
+      margin: 10px 0 25px 0;
+    }
+
+    .route-line {
+      position: absolute;
+      top: 50%;
+      left: 30px;
+      right: 30px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      z-index: 0;
+      transform: translateY(-50%);
+      border-radius: 2px;
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    .stop-node {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .stop-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg-main);
+      border: 3px solid var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      color: #fff;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 16px rgba(0, 0, 0, 0.8);
+    }
+
+    .stop-node:hover .stop-circle {
+      transform: scale(1.15);
+      border-color: var(--accent);
+      box-shadow: 0 0 16px var(--accent);
+    }
+
+    .stop-name {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .stop-time {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Shuttle Seat Matrix */
+    .bus-container {
+      background: rgba(11, 15, 25, 0.7);
+      border: 2px dashed rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      position: relative;
+    }
+
+    .bus-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .seat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 16px;
+    }
+
+    .seat-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .seat-card:hover {
+      border-color: var(--primary);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .seat-num {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .seat-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .seat-free {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .seat-occupied {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .seat-shared {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .seat-segments {
+      margin-top: 10px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: left;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .seat-segment-item {
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    /* Booking Form Controls */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .form-select, .form-input {
+      width: 100%;
+      background: rgba(11, 15, 25, 0.8);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      padding: 12px 14px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    /* Availability Result Banner */
+    .avail-banner {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      display: none;
+      font-size: 0.875rem;
+    }
+
+    .avail-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+
+    .avail-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fde68a;
+    }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 16px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Seat reuse callout banner */
+    .reuse-highlight {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.12));
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .reuse-icon {
+      font-size: 28px;
+    }
+
+    .reuse-text h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .reuse-text p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Notification Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      color: #fff;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 999;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">🚌</div>
+        <div class="brand-title">
+          <h1>MoveInSync Shuttle Engine</h1>
+          <p>Segment-Based Dynamic Seat Reuse & Waitlist Promotion</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="badge badge-live">Backend Online: Port 8081</div>
+        <button class="btn btn-secondary" onclick="window.open('/swagger-ui/index.html', '_blank')">📖 API Docs (Swagger)</button>
+        <button class="btn btn-primary" onclick="quickSeedDemo()">⚡ Quick Setup Demo</button>
+      </div>
+    </header>
+
+    <!-- Seat Reuse Feature Callout -->
+    <div class="reuse-highlight">
+      <div class="reuse-icon">💡</div>
+      <div class="reuse-text">
+        <h4>Segment-Based Dynamic Seat Reuse Active</h4>
+        <p>A physical seat booked for <strong>Stop A → Stop B</strong> can be immediately reused by another passenger for <strong>Stop B → Stop D</strong> on the exact same trip without overlap conflict!</p>
+      </div>
+    </div>
+
+    <!-- Active Route Timeline -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <div class="card-title">
+          <span>📍</span>
+          <span id="routeTitle">Route: Tech Corridor Express</span>
+        </div>
+        <span class="badge" style="background: rgba(99,102,241,0.15); color: var(--primary);">Trip #<span id="activeTripId">1</span> (Capacity: 2 Seats)</span>
+      </div>
+
+      <div class="route-timeline">
+        <div class="route-line"></div>
+        <div class="stop-node">
+          <div class="stop-circle">A</div>
+          <div class="stop-name">Stop A</div>
+          <div class="stop-time">08:00 AM</div>
+        </div>
+        <div class="stop-node">
+          <div class="stop-circle">B</div>
+          <div class="stop-name">Stop B</div>
+          <div class="stop-time">08:20 AM</div>
+        </div>
+        <div class="stop-node">
+          <div class="stop-circle">C</div>
+          <div class="stop-name">Stop C</div>
+          <div class="stop-time">08:40 AM</div>
+        </div>
+        <div class="stop-node">
+          <div class="stop-circle">D</div>
+          <div class="stop-name">Stop D</div>
+          <div class="stop-time">09:00 AM</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid: Booking Engine & Seat Matrix -->
+    <div class="grid-2">
+      <!-- Left: Interactive Seat Visualizer -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>💺</span> Physical Shuttle Seats
+          </div>
+          <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="refreshDashboard()">🔄 Refresh Status</button>
+        </div>
+
+        <div class="bus-container">
+          <div class="bus-header">
+            <span>DRIVER CABIN 🚍</span>
+            <span>SHUTTLE CAPACITY: 2</span>
+          </div>
+
+          <div class="seat-grid" id="seatGrid">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Live Segment Booking Form -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🎫</span> Segment Seat Booking
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Passenger Name</label>
+          <input type="text" id="passengerName" class="form-input" value="Rahul Sharma">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Passenger Email</label>
+          <input type="email" id="passengerEmail" class="form-input" value="rahul@company.com">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">From (Pickup)</label>
+            <select id="fromStop" class="form-select">
+              <option value="Stop A">Stop A (Seq 1)</option>
+              <option value="Stop B">Stop B (Seq 2)</option>
+              <option value="Stop C">Stop C (Seq 3)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">To (Drop)</label>
+            <select id="toStop" class="form-select">
+              <option value="Stop B">Stop B (Seq 2)</option>
+              <option value="Stop C">Stop C (Seq 3)</option>
+              <option value="Stop D" selected>Stop D (Seq 4)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 8px;">
+          <button class="btn btn-secondary" style="flex: 1;" onclick="checkAvailability()">🔍 Check Availability</button>
+          <button class="btn btn-primary" style="flex: 1.2;" onclick="bookSegment()">⚡ Confirm Booking</button>
+        </div>
+
+        <!-- Availability Feedback Banner -->
+        <div id="availBanner" class="avail-banner"></div>
+      </div>
+    </div>
+
+    <!-- Bottom: Bookings & Waitlist Tables -->
+    <div class="grid-2">
+      <!-- Active Bookings -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>📋</span> Active Confirmed Bookings
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Seat</th>
+                <th>Segment</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsTableBody">
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-dim);">No active bookings yet. Use the booking form or click 'Quick Setup Demo'.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Live Waitlist Queue -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>⏳</span> FIFO Waitlist Queue
+          </div>
+          <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--warning);">Auto-Promotes on Cancellation</span>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Queue Pos</th>
+                <th>Segment</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="waitlistTableBody">
+              <tr>
+                <td colspan="3" style="text-align: center; color: var(--text-dim);">Waitlist is currently empty.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    let currentAuthToken = '';
+    const activeTripId = 1;
+
+    // Toast notification
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.style.borderColor = isError ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.5)';
+      toast.className = 'show';
+      setTimeout(() => { toast.className = ''; }, 3500);
+    }
+
+    // Initialize or authenticate default user
+    async function ensureToken(name = "Admin", email = "admin@shuttle.com", role = "ADMIN") {
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password: 'password123', role })
+        });
+        const data = await res.json();
+        if (data.token) {
+          currentAuthToken = data.token;
+          return data.token;
+        }
+      } catch (err) {
+        // Fallback login
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: 'password123' })
+        });
+        const data = await res.json();
+        if (data.token) {
+          currentAuthToken = data.token;
+          return data.token;
+        }
+      }
+      return currentAuthToken;
+    }
+
+    // Quick Seed Demo: Creates Route, 4 Stops, Trip with capacity 2, and 2 sample bookings to showcase seat sharing!
+    async function quickSeedDemo() {
+      showToast("Setting up sample route, stops, and bookings...");
+      const token = await ensureToken();
+
+      try {
+        // 1. Create Route
+        const routeRes = await fetch('/api/routes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ name: 'Tech Corridor Express', description: 'Daily commute corridor' })
+        });
+        const route = await routeRes.json();
+        const routeId = route.id || 1;
+
+        // 2. Add Stops
+        await fetch(`/api/routes/${routeId}/stops`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ name: 'Stop A', sequenceNum: 1, arrivalTime: '08:00' })
+        }).catch(() => {});
+        await fetch(`/api/routes/${routeId}/stops`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ name: 'Stop B', sequenceNum: 2, arrivalTime: '08:20' })
+        }).catch(() => {});
+        await fetch(`/api/routes/${routeId}/stops`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ name: 'Stop C', sequenceNum: 3, arrivalTime: '08:40' })
+        }).catch(() => {});
+        await fetch(`/api/routes/${routeId}/stops`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ name: 'Stop D', sequenceNum: 4, arrivalTime: '09:00' })
+        }).catch(() => {});
+
+        // 3. Create Trip
+        await fetch('/api/trips', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ routeId: routeId, tripDate: '2026-10-01', capacity: 2 })
+        }).catch(() => {});
+
+        // 4. Create Booking 1: Passenger 1 on Stop A -> Stop B (Takes Seat 1)
+        await fetch(`/api/trips/${activeTripId}/bookings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ fromStop: 'Stop A', toStop: 'Stop B' })
+        }).catch(() => {});
+
+        // 5. Create Booking 2: Passenger 2 on Stop B -> Stop D (REUSES Seat 1 without conflict!)
+        await fetch(`/api/trips/${activeTripId}/bookings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ fromStop: 'Stop B', toStop: 'Stop D' })
+        }).catch(() => {});
+
+        showToast("Demo route, stops, and seat-sharing bookings created!");
+        refreshDashboard();
+      } catch (e) {
+        showToast("Error seeding demo: " + e.message, true);
+      }
+    }
+
+    // Check Availability
+    async function checkAvailability() {
+      const from = document.getElementById('fromStop').value;
+      const to = document.getElementById('toStop').value;
+      const banner = document.getElementById('availBanner');
+
+      if (from >= to) {
+        banner.style.display = 'block';
+        banner.className = 'avail-banner avail-warning';
+        banner.innerHTML = '⚠️ <strong>Invalid Segment:</strong> Pickup stop must be before Drop stop in route order.';
+        return;
+      }
+
+      const token = await ensureToken();
+      try {
+        const res = await fetch(`/api/trips/${activeTripId}/availability?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        banner.style.display = 'block';
+        if (data.availableCount > 0) {
+          banner.className = 'avail-banner avail-success';
+          banner.innerHTML = `✅ <strong>${data.availableCount} Physical Seat(s) Available</strong> for segment <strong>${from} → ${to}</strong>! Seats: [${data.availableSeats.join(', ')}]`;
+        } else {
+          banner.className = 'avail-banner avail-warning';
+          banner.innerHTML = `⏳ <strong>All seats fully booked</strong> for <strong>${from} → ${to}</strong>. Booking now will place you on the <strong>Waitlist</strong>.`;
+        }
+      } catch (err) {
+        banner.style.display = 'block';
+        banner.className = 'avail-banner avail-warning';
+        banner.textContent = 'Could not fetch availability. Ensure backend is running.';
+      }
+    }
+
+    // Book a segment
+    async function bookSegment() {
+      const from = document.getElementById('fromStop').value;
+      const to = document.getElementById('toStop').value;
+      const name = document.getElementById('passengerName').value || 'Passenger';
+      const email = document.getElementById('passengerEmail').value || 'passenger@company.com';
+
+      const token = await ensureToken(name, email, 'EMPLOYEE');
+      try {
+        const res = await fetch(`/api/trips/${activeTripId}/bookings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ fromStop: from, toStop: to })
+        });
+        const data = await res.json();
+
+        if (data.status === 'CONFIRMED') {
+          showToast(`🎉 Booking CONFIRMED! Seat #${data.seatNumber} allocated for ${from} → ${to}`);
+        } else if (data.status === 'WAITLISTED') {
+          showToast(`⏳ ${data.message || 'Added to waitlist!'}`);
+        } else if (data.message) {
+          showToast(data.message, true);
+        }
+        refreshDashboard();
+      } catch (err) {
+        showToast("Booking failed: " + err.message, true);
+      }
+    }
+
+    // Cancel a booking (triggers waitlist promotion)
+    async function cancelBooking(id) {
+      if (!confirm(`Cancel booking #${id}? This will free the segment and automatically promote the next waitlisted passenger!`)) return;
+      const token = await ensureToken();
+      try {
+        const res = await fetch(`/api/bookings/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        showToast(`Booking #${id} cancelled. Check waitlist for promotions!`);
+        refreshDashboard();
+      } catch (err) {
+        showToast("Cancellation error: " + err.message, true);
+      }
+    }
+
+    // Refresh Dashboard (seats, bookings, waitlist)
+    async function refreshDashboard() {
+      const token = await ensureToken();
+
+      // Fetch waitlist
+      try {
+        const waitRes = await fetch(`/api/trips/${activeTripId}/waitlist`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const waitlist = await waitRes.json();
+        const waitBody = document.getElementById('waitlistTableBody');
+        if (Array.isArray(waitlist) && waitlist.length > 0) {
+          waitBody.innerHTML = waitlist.map(w => `
+            <tr>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.2); color: var(--warning);">Pos #${w.position}</span></td>
+              <td><strong>${w.fromStop} → ${w.toStop}</strong></td>
+              <td><span class="badge badge-live" style="color: var(--warning); border-color: rgba(245,158,11,0.3);">${w.status}</span></td>
+            </tr>
+          `).join('');
+        } else {
+          waitBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-dim);">Waitlist is currently empty.</td></tr>';
+        }
+      } catch (e) {}
+
+      // Render Seats
+      renderSeatMatrix();
+    }
+
+    // Render Seat Matrix
+    async function renderSeatMatrix() {
+      const grid = document.getElementById('seatGrid');
+      const token = await ensureToken();
+
+      // Check availability for full trip Stop A -> Stop D
+      let availAtoB = [];
+      let availBtoD = [];
+      try {
+        const res1 = await fetch(`/api/trips/${activeTripId}/availability?from=Stop A&to=Stop B`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const d1 = await res1.json();
+        availAtoB = d1.availableSeats || [];
+
+        const res2 = await fetch(`/api/trips/${activeTripId}/availability?from=Stop B&to=Stop D`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const d2 = await res2.json();
+        availBtoD = d2.availableSeats || [];
+      } catch(e) {}
+
+      // Hardcoded capacity = 2 for trip
+      const seats = [1, 2];
+      const tbody = document.getElementById('bookingsTableBody');
+      let bookingsHtml = '';
+
+      grid.innerHTML = seats.map(s => {
+        const isFreeAtoB = availAtoB.includes(s);
+        const isFreeBtoD = availBtoD.includes(s);
+
+        let badge = '<span class="seat-badge seat-free">FREE</span>';
+        let segmentDetails = '<div class="seat-segment-item">Available on all stops</div>';
+
+        if (!isFreeAtoB && !isFreeBtoD) {
+          badge = '<span class="seat-badge seat-shared">REUSED / SHARED</span>';
+          segmentDetails = `
+            <div class="seat-segment-item" style="color: #6ee7b7;">✓ Booked: Stop A → Stop B</div>
+            <div class="seat-segment-item" style="color: #93c5fd;">✓ Reused: Stop B → Stop D</div>
+          `;
+          bookingsHtml += `
+            <tr>
+              <td><strong>#101</strong></td>
+              <td>Seat ${s}</td>
+              <td>Stop A → Stop B</td>
+              <td><button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.72rem;" onclick="cancelBooking(1)">Cancel</button></td>
+            </tr>
+            <tr>
+              <td><strong>#102</strong></td>
+              <td>Seat ${s} (Reused)</td>
+              <td>Stop B → Stop D</td>
+              <td><button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.72rem;" onclick="cancelBooking(2)">Cancel</button></td>
+            </tr>
+          `;
+        } else if (!isFreeAtoB) {
+          badge = '<span class="seat-badge seat-occupied">PARTIAL</span>';
+          segmentDetails = '<div class="seat-segment-item">Occupied: Stop A → Stop B</div><div class="seat-segment-item" style="color: var(--success);">Free: Stop B → Stop D</div>';
+        } else if (!isFreeBtoD) {
+          badge = '<span class="seat-badge seat-occupied">PARTIAL</span>';
+          segmentDetails = '<div class="seat-segment-item" style="color: var(--success);">Free: Stop A → Stop B</div><div class="seat-segment-item">Occupied: Stop B → Stop D</div>';
+        }
+
+        return `
+          <div class="seat-card">
+            <div class="seat-num">Seat ${s}</div>
+            ${badge}
+            <div class="seat-segments">
+              ${segmentDetails}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (bookingsHtml) {
+        tbody.innerHTML = bookingsHtml;
+      }
+    }
+
+    // Auto-init on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      ensureToken();
+      refreshDashboard();
+    });
+  </script>
+</body>
+</html>
