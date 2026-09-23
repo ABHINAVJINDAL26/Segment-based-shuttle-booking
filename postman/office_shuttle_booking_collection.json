@@ -1,0 +1,353 @@
+{
+  "info": {
+    "name": "Office Shuttle Booking System API",
+    "_postman_id": "7b3b4f62-e19c-4b53-847e-85c189b21f92",
+    "description": "Comprehensive Postman test suite for MoveInSync Office Shuttle Segment-Based Booking System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employee_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "route_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "trip_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@movinsync.com\",\n  \"password\": \"admin123\",\n  \"role\": \"ADMIN\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"]}
+          }
+        },
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('admin_token', jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@movinsync.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "Register Employee 1",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rahul Sharma\",\n  \"email\": \"rahul@movinsync.com\",\n  \"password\": \"pass123\",\n  \"role\": \"EMPLOYEE\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"]}
+          }
+        },
+        {
+          "name": "Login Employee 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('employee_token', jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rahul@movinsync.com\",\n  \"password\": \"pass123\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Route Management (Admin)",
+      "item": [
+        {
+          "name": "Create Route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set('route_id', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{admin_token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tech Park to Electronic City\",\n  \"description\": \"Morning commute shuttle route\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/routes", "host": ["{{baseUrl}}"], "path": ["api", "routes"]}
+          }
+        },
+        {
+          "name": "Add Stop A (Seq 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{admin_token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Stop A\",\n  \"sequenceNum\": 1,\n  \"arrivalTime\": \"08:00:00\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/routes/{{route_id}}/stops", "host": ["{{baseUrl}}"], "path": ["api", "routes", "{{route_id}}", "stops"]}
+          }
+        },
+        {
+          "name": "Add Stop B (Seq 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{admin_token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Stop B\",\n  \"sequenceNum\": 2,\n  \"arrivalTime\": \"08:20:00\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/routes/{{route_id}}/stops", "host": ["{{baseUrl}}"], "path": ["api", "routes", "{{route_id}}", "stops"]}
+          }
+        },
+        {
+          "name": "Add Stop C (Seq 3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{admin_token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Stop C\",\n  \"sequenceNum\": 3,\n  \"arrivalTime\": \"08:40:00\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/routes/{{route_id}}/stops", "host": ["{{baseUrl}}"], "path": ["api", "routes", "{{route_id}}", "stops"]}
+          }
+        },
+        {
+          "name": "Add Stop D (Seq 4)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{admin_token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Stop D\",\n  \"sequenceNum\": 4,\n  \"arrivalTime\": \"09:00:00\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/routes/{{route_id}}/stops", "host": ["{{baseUrl}}"], "path": ["api", "routes", "{{route_id}}", "stops"]}
+          }
+        },
+        {
+          "name": "Get Route with Stops",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{employee_token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/routes/{{route_id}}/stops", "host": ["{{baseUrl}}"], "path": ["api", "routes", "{{route_id}}", "stops"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Trip Scheduling",
+      "item": [
+        {
+          "name": "Create Trip (Capacity 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set('trip_id', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{admin_token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routeId\": {{route_id}},\n  \"tripDate\": \"2026-10-01\",\n  \"capacity\": 2\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/trips", "host": ["{{baseUrl}}"], "path": ["api", "trips"]}
+          }
+        },
+        {
+          "name": "Check Availability Stop A to Stop B",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{employee_token}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/{{trip_id}}/availability?from=Stop A&to=Stop B",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", "{{trip_id}}", "availability"],
+              "query": [
+                {"key": "from", "value": "Stop A"},
+                {"key": "to", "value": "Stop B"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Segment Bookings & Seat Sharing",
+      "item": [
+        {
+          "name": "Book Segment A -> B (CONFIRMED)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.bookingId) {",
+                  "    pm.collectionVariables.set('booking_id', jsonData.bookingId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{employee_token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromStop\": \"Stop A\",\n  \"toStop\": \"Stop B\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/trips/{{trip_id}}/bookings", "host": ["{{baseUrl}}"], "path": ["api", "trips", "{{trip_id}}", "bookings"]}
+          }
+        },
+        {
+          "name": "Book Non-Overlapping Segment B -> D (Reuses Seat 1!)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{admin_token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromStop\": \"Stop B\",\n  \"toStop\": \"Stop D\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/trips/{{trip_id}}/bookings", "host": ["{{baseUrl}}"], "path": ["api", "trips", "{{trip_id}}", "bookings"]}
+          }
+        },
+        {
+          "name": "Cancel Booking (Auto-Promotion Trigger)",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{employee_token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/bookings/{{booking_id}}", "host": ["{{baseUrl}}"], "path": ["api", "bookings", "{{booking_id}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Waitlist Management",
+      "item": [
+        {
+          "name": "Get My Waitlist",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{employee_token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/waitlist", "host": ["{{baseUrl}}"], "path": ["api", "waitlist"]}
+          }
+        },
+        {
+          "name": "Get Trip Waitlist (FIFO)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{admin_token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/trips/{{trip_id}}/waitlist", "host": ["{{baseUrl}}"], "path": ["api", "trips", "{{trip_id}}", "waitlist"]}
+          }
+        }
+      ]
+    }
+  ]
+}
