@@ -4,7 +4,7 @@ import com.movinsync.shuttle.dto.AuthResponse;
 import com.movinsync.shuttle.dto.LoginRequest;
 import com.movinsync.shuttle.dto.RegisterRequest;
 import com.movinsync.shuttle.entity.User;
-import com.movinsync.shuttle.exception.DuplicateBookingException;
+import com.movinsync.shuttle.exception.UserAlreadyExistsException;
 import com.movinsync.shuttle.repository.UserRepository;
 import com.movinsync.shuttle.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateBookingException(
+            throw new UserAlreadyExistsException(
                     "Email already registered: " + request.getEmail());
         }
 
@@ -45,7 +45,7 @@ public class AuthService {
         try {
             userRepository.save(user);
         } catch (DataIntegrityViolationException ex) {
-            throw new DuplicateBookingException("Email already registered: " + request.getEmail());
+            throw new UserAlreadyExistsException("Email already registered: " + request.getEmail());
         }
         log.info("New employee registered: email={}", user.getEmail());
 

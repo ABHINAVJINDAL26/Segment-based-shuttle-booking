@@ -84,6 +84,12 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.CONFLICT, "DUPLICATE_BOOKING", ex.getMessage());
     }
 
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleUserAlreadyExists(UserAlreadyExistsException ex) {
+        log.warn("User already exists: {}", ex.getMessage());
+        return buildError(HttpStatus.CONFLICT, "USER_ALREADY_EXISTS", ex.getMessage());
+    }
+
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Map<String, Object>> handleUnauthorized(UnauthorizedException ex) {
         log.warn("Unauthorized: {}", ex.getMessage());
