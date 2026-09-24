@@ -10,6 +10,7 @@ import com.movinsync.shuttle.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -41,8 +42,12 @@ public class AuthService {
                 .role(User.Role.EMPLOYEE)
                 .build();
 
-        userRepository.save(user);
-        log.info("New user registered: email={}", user.getEmail());
+        try {
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new DuplicateBookingException("Email already registered: " + request.getEmail());
+        }
+        log.info("New employee registered: email={}", user.getEmail());
 
         UserDetails details = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtUtil.generateToken(details);

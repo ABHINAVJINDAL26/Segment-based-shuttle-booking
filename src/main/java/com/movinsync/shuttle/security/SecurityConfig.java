@@ -59,6 +59,7 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health").permitAll()
 
                 // Admin-only endpoints
+                .requestMatchers(HttpMethod.POST, "/api/trips/*/bookings").hasAnyRole("ADMIN", "EMPLOYEE")
                 .requestMatchers(HttpMethod.POST, "/api/routes/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,  "/api/routes/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasRole("ADMIN")

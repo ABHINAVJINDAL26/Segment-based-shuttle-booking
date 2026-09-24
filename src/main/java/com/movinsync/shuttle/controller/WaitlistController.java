@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class WaitlistController {
     }
 
     @GetMapping("/trips/{tripId}/waitlist")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all active waitlist entries for a specific trip ordered by FIFO position")
     public ResponseEntity<List<WaitlistResponse>> getTripWaitlist(@PathVariable Long tripId) {
         return ResponseEntity.ok(waitlistService.getTripWaitlist(tripId));
