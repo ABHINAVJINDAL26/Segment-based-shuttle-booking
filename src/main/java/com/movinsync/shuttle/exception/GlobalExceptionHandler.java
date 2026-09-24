@@ -3,6 +3,7 @@ package com.movinsync.shuttle.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -51,6 +52,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleTripNotFound(TripNotFoundException ex) {
         log.warn("Trip not found: {}", ex.getMessage());
         return buildError(HttpStatus.NOT_FOUND, "TRIP_NOT_FOUND", ex.getMessage());
+    }
+
+    @ExceptionHandler(VehicleNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleVehicleNotFound(VehicleNotFoundException ex) {
+        log.warn("Vehicle not found: {}", ex.getMessage());
+        return buildError(HttpStatus.NOT_FOUND, "VEHICLE_NOT_FOUND", ex.getMessage());
     }
 
     @ExceptionHandler(BookingNotFoundException.class)
@@ -109,6 +116,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
         log.warn("Bad credentials attempt");
         return buildError(HttpStatus.UNAUTHORIZED, "BAD_CREDENTIALS", "Invalid email or password.");
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<Map<String, Object>> handleDataAccess(DataAccessException ex) {
+        log.error("Persistence failure", ex);
+        return buildError(HttpStatus.SERVICE_UNAVAILABLE, "PERSISTENCE_UNAVAILABLE",
+                "The booking service is temporarily unavailable. Please retry shortly.");
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Invalid request: {}", ex.getMessage());
+        return buildError(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", ex.getMessage());
     }
 
     // ----------------------------------------------------------------

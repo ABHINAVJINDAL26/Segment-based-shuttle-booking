@@ -1,6 +1,7 @@
 package com.movinsync.shuttle.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -27,6 +28,7 @@ public class User {
     private String email;
 
     @Column(name = "password_hash", nullable = false)
+    @JsonIgnore
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
@@ -42,6 +44,7 @@ public class User {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     private List<Booking> bookings = new ArrayList<>();
 

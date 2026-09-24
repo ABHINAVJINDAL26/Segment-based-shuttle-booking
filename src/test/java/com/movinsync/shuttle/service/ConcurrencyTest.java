@@ -169,7 +169,7 @@ class ConcurrencyTest {
                 seatRepository.findByTripId(testTrip.getId()).get(0).getId());
         assertEquals(1, confirmedBookings.size(), "Database must contain exactly 1 confirmed booking for the seat");
 
-        List<WaitlistEntry> waitlist = waitlistRepository.findByTripIdAndStatusOrderByPositionAsc(
+        List<WaitlistEntry> waitlist = waitlistRepository.findByTripIdAndStatusOrderByPositionAscCreatedAtAsc(
                 testTrip.getId(), WaitlistEntry.WaitlistStatus.WAITING);
         assertEquals(9, waitlist.size(), "Waitlist must contain exactly 9 entries");
 

@@ -39,9 +39,21 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/bookings/{bookingId}/no-show")
+    @Operation(summary = "Mark a confirmed booking as NO_SHOW and trigger waitlist promotion")
+    public ResponseEntity<BookingResponse> markNoShow(@PathVariable Long bookingId) {
+        return ResponseEntity.ok(bookingService.markNoShow(bookingId));
+    }
+
     @GetMapping("/bookings/{bookingId}")
     @Operation(summary = "Get details of a specific booking")
     public ResponseEntity<Booking> getBooking(@PathVariable Long bookingId) {
         return ResponseEntity.ok(bookingService.getBooking(bookingId));
+    }
+
+    @GetMapping("/my-bookings")
+    @Operation(summary = "List the current user's confirmed bookings")
+    public ResponseEntity<java.util.List<BookingResponse>> getMyBookings() {
+        return ResponseEntity.ok(bookingService.getMyBookings());
     }
 }

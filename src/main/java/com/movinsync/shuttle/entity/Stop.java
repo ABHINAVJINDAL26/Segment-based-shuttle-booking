@@ -1,6 +1,7 @@
 package com.movinsync.shuttle.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 @Entity
@@ -21,6 +22,7 @@ public class Stop {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "route_id", nullable = false)
+    @JsonIgnore
     private Route route;
 
     @Column(nullable = false, length = 100)

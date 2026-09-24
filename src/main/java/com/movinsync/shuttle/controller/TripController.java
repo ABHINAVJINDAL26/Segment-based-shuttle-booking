@@ -56,6 +56,24 @@ public class TripController {
         return ResponseEntity.ok(tripService.updateTripStatus(tripId, status));
     }
 
+    @PatchMapping("/{tripId}/position")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update the current stop sequence for an active trip (ADMIN only)")
+    public ResponseEntity<Trip> updateTripPosition(
+            @PathVariable Long tripId,
+            @RequestParam int currentStopSequence) {
+        return ResponseEntity.ok(tripService.updateCurrentStop(tripId, currentStopSequence));
+    }
+
+    @PutMapping("/{tripId}/vehicle/{vehicleId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Assign or reassign a vehicle to a trip (ADMIN only)")
+    public ResponseEntity<Trip> assignVehicle(
+            @PathVariable Long tripId,
+            @PathVariable Long vehicleId) {
+        return ResponseEntity.ok(tripService.assignVehicle(tripId, vehicleId));
+    }
+
     @GetMapping("/{tripId}/availability")
     @Operation(summary = "Query available physical seats for a specific route segment (from -> to)")
     public ResponseEntity<AvailabilityResponse> getAvailability(

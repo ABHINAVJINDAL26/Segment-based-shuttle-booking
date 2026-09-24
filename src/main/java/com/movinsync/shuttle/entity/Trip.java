@@ -1,6 +1,7 @@
 package com.movinsync.shuttle.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -22,13 +23,23 @@ public class Trip {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "route_id", nullable = false)
+    @JsonIgnore
     private Route route;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vehicle_id")
+    @JsonIgnore
+    private Vehicle vehicle;
 
     @Column(name = "trip_date", nullable = false)
     private LocalDate tripDate;
 
     @Column(nullable = false)
     private Integer capacity;
+
+    @Column(name = "current_stop_sequence", nullable = false)
+    @Builder.Default
+    private Integer currentStopSequence = 1;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -46,6 +57,7 @@ public class Trip {
     private List<Seat> seats = new ArrayList<>();
 
     @OneToMany(mappedBy = "trip", fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     private List<Booking> bookings = new ArrayList<>();
 

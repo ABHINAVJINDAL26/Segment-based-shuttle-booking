@@ -8,6 +8,7 @@ import com.movinsync.shuttle.repository.*;
 import com.movinsync.shuttle.util.OverlapDetector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,7 @@ public class BookingService {
     private final UserRepository userRepository;
     private final WaitlistService waitlistService;
     private final OverlapDetector overlapDetector;
+        private final MeterRegistry meterRegistry;
 
     // ---------------------------------------------------------------
     // Book a seat
@@ -73,6 +75,7 @@ public class BookingService {
         Stop toStop   = resolveStop(trip.getRoute().getId(), request.getToStop());
 
         validateSegmentOrder(fromStop, toStop);
+        validateBoardingWindow(trip, fromStop);
 
         // Duplicate booking guard
         if (bookingRepository.existsActiveBooking(
@@ -109,6 +112,7 @@ public class BookingService {
                         .build();
 
                 Booking saved = bookingRepository.save(booking);
+                count("shuttle.booking.confirmed");
 
                 log.info("Booking CONFIRMED: bookingId={}, seat={}, userId={}, segment={}→{}",
                         saved.getId(), lockedSeat.getSeatNumber(),
@@ -129,6 +133,7 @@ public class BookingService {
         // No seat available — join waitlist
         log.info("No seat available, adding to waitlist: userId={}, tripId={}", user.getId(), tripId);
         WaitlistEntry entry = waitlistService.addToWaitlist(trip, user, fromStop, toStop);
+        count("shuttle.booking.waitlisted");
 
         return BookingResponse.builder()
                 .tripId(tripId)
@@ -168,6 +173,7 @@ public class BookingService {
 
         booking.setStatus(Booking.BookingStatus.CANCELLED);
         bookingRepository.save(booking);
+        count("shuttle.booking.cancelled");
 
         log.info("Booking CANCELLED: bookingId={}, userId={}", bookingId, user.getId());
 
@@ -182,6 +188,40 @@ public class BookingService {
                 .fromStop(booking.getFromStop().getName())
                 .toStop(booking.getToStop().getName())
                 .status("CANCELLED")
+                .build();
+    }
+
+    @Transactional
+    @CacheEvict(value = "availability", allEntries = true)
+    public BookingResponse markNoShow(Long bookingId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException(bookingId));
+
+        boolean isOwner = booking.getUser().getId().equals(user.getId());
+        boolean isAdmin = user.getRole() == User.Role.ADMIN;
+        if (!isOwner && !isAdmin) {
+            throw new UnauthorizedException("You can only update your own booking.");
+        }
+        if (booking.getStatus() != Booking.BookingStatus.CONFIRMED) {
+            throw new InvalidSegmentException("Booking " + bookingId + " is already " + booking.getStatus());
+        }
+
+        booking.setStatus(Booking.BookingStatus.NO_SHOW);
+        bookingRepository.save(booking);
+        count("shuttle.booking.no_show");
+        waitlistService.promoteFromWaitlist(booking.getTrip(), booking.getSeat(),
+                booking.getFromStop(), booking.getToStop());
+
+        return BookingResponse.builder()
+                .bookingId(booking.getId())
+                .tripId(booking.getTrip().getId())
+                .seatNumber(booking.getSeat().getSeatNumber())
+                .fromStop(booking.getFromStop().getName())
+                .toStop(booking.getToStop().getName())
+                .status("NO_SHOW")
                 .build();
     }
 
@@ -206,6 +246,25 @@ public class BookingService {
         }
 
         return booking;
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getMyBookings() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
+        return bookingRepository.findByUserId(user.getId()).stream()
+                .filter(booking -> booking.getStatus() == Booking.BookingStatus.CONFIRMED)
+                .map(booking -> BookingResponse.builder()
+                        .bookingId(booking.getId())
+                        .tripId(booking.getTrip().getId())
+                        .seatNumber(booking.getSeat().getSeatNumber())
+                        .fromStop(booking.getFromStop().getName())
+                        .toStop(booking.getToStop().getName())
+                        .status(booking.getStatus().name())
+                        .createdAt(booking.getCreatedAt())
+                        .build())
+                .toList();
     }
 
     // ---------------------------------------------------------------
@@ -235,4 +294,17 @@ public class BookingService {
                     "' (seq=" + to.getSequenceNum() + ").");
         }
     }
+
+    private void validateBoardingWindow(Trip trip, Stop fromStop) {
+        if (trip.getStatus() == Trip.TripStatus.ACTIVE
+                && fromStop.getSequenceNum() < trip.getCurrentStopSequence()) {
+            throw new InvalidSegmentException("Boarding stop has already been passed for this active trip.");
+        }
+    }
+
+        private void count(String metricName) {
+                if (meterRegistry != null) {
+                        meterRegistry.counter(metricName).increment();
+                }
+        }
 }

@@ -1,6 +1,7 @@
 package com.movinsync.shuttle.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -37,6 +38,7 @@ public class Route {
     private List<Stop> stops = new ArrayList<>();
 
     @OneToMany(mappedBy = "route", fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     private List<Trip> trips = new ArrayList<>();
 

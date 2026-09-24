@@ -65,7 +65,7 @@ public class WaitlistService {
     @CacheEvict(value = "availability", allEntries = true)
     public void promoteFromWaitlist(Trip trip, Seat vacatedSeat, Stop vacatedFrom, Stop vacatedTo) {
         List<WaitlistEntry> waitingList = waitlistRepository
-                .findByTripIdAndStatusOrderByPositionAsc(trip.getId(), WaitlistEntry.WaitlistStatus.WAITING);
+                .findByTripIdAndStatusOrderByPositionAscCreatedAtAsc(trip.getId(), WaitlistEntry.WaitlistStatus.WAITING);
 
         if (waitingList.isEmpty()) {
             return;
@@ -112,7 +112,7 @@ public class WaitlistService {
 
     @Transactional(readOnly = true)
     public List<WaitlistResponse> getTripWaitlist(Long tripId) {
-        return waitlistRepository.findByTripIdAndStatusOrderByPositionAsc(tripId, WaitlistEntry.WaitlistStatus.WAITING)
+        return waitlistRepository.findByTripIdAndStatusOrderByPositionAscCreatedAtAsc(tripId, WaitlistEntry.WaitlistStatus.WAITING)
                 .stream()
                 .map(this::toResponse)
                 .toList();

@@ -15,13 +15,13 @@ public interface WaitlistRepository extends JpaRepository<WaitlistEntry, Long> {
     /**
      * All WAITING entries for a trip ordered by position (FIFO).
      */
-    List<WaitlistEntry> findByTripIdAndStatusOrderByPositionAsc(
+    List<WaitlistEntry> findByTripIdAndStatusOrderByPositionAscCreatedAtAsc(
             Long tripId, WaitlistEntry.WaitlistStatus status);
 
     /**
      * Maximum position for a trip so new entries get the next position.
      */
-    @Query("SELECT MAX(w.position) FROM WaitlistEntry w WHERE w.trip.id = :tripId AND w.status = 'WAITING'")
+    @Query("SELECT MAX(w.position) FROM WaitlistEntry w WHERE w.trip.id = :tripId")
     Optional<Integer> findMaxPositionByTripId(@Param("tripId") Long tripId);
 
     /**
