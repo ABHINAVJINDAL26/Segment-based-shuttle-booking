@@ -195,6 +195,26 @@
       gap: 12px;
     }
 
+    .user-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .user-chip::before {
+      content: '●';
+      color: var(--success);
+      font-size: 0.65rem;
+    }
+
     .badge {
       display: inline-flex;
       align-items: center;
@@ -633,28 +653,38 @@
         <p class="auth-form-subtitle">Sign in to manage your shuttle bookings.</p>
         <div class="form-group">
           <label class="form-label">Email</label>
-          <input type="email" id="authEmail" class="form-input" autocomplete="email">
+          <input type="email" id="authEmail" class="form-input" autocomplete="email" placeholder="name@company.com">
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
-          <input type="password" id="authPassword" class="form-input" autocomplete="current-password">
+          <input type="password" id="authPassword" class="form-input" autocomplete="current-password" placeholder="••••••••">
         </div>
         <button class="btn btn-primary auth-submit" onclick="loginUser()">🔓 Sign in</button>
+
+        <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-color);">
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">⚡ Quick Fill Login (Click to Auto-Fill):</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.72rem;" onclick="fillLogin('rahul@company.com', 'User123!')">👤 Rahul</button>
+            <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.72rem;" onclick="fillLogin('priya@company.com', 'User123!')">👤 Priya</button>
+            <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.72rem;" onclick="fillLogin('amit@company.com', 'User123!')">👤 Amit</button>
+            <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.72rem;" onclick="fillLogin('admin@movinsync.com', 'Admin123!')">👑 Admin</button>
+          </div>
+        </div>
       </div>
       <div id="signupForm" style="display: none;">
         <h2 class="auth-form-title">Create employee account</h2>
-        <p class="auth-form-subtitle">Use your real details to start booking.</p>
+        <p class="auth-form-subtitle">Register a new employee account to start booking.</p>
         <div class="form-group">
           <label class="form-label">Full name</label>
-          <input type="text" id="authName" class="form-input" autocomplete="name">
+          <input type="text" id="authName" class="form-input" autocomplete="name" placeholder="e.g. Vikram Malhotra">
         </div>
         <div class="form-group">
           <label class="form-label">Email</label>
-          <input type="email" id="signupEmail" class="form-input" autocomplete="email">
+          <input type="email" id="signupEmail" class="form-input" autocomplete="email" placeholder="vikram@company.com">
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
-          <input type="password" id="signupPassword" class="form-input" autocomplete="new-password">
+          <input type="password" id="signupPassword" class="form-input" autocomplete="new-password" placeholder="••••••••">
         </div>
         <button class="btn btn-primary auth-submit" onclick="registerUser()">✍ Create account</button>
       </div>
@@ -673,6 +703,7 @@
       </div>
       <div class="header-actions">
         <div class="badge badge-live">Backend Online</div>
+        <div id="userChip" class="user-chip">Guest</div>
         <button class="btn btn-secondary" onclick="window.open('/swagger-ui/index.html', '_blank')">📖 API Docs (Swagger)</button>
         <button class="btn btn-secondary" onclick="logout()">↪ Logout</button>
       </div>
@@ -755,12 +786,12 @@
 
         <div class="form-group">
           <label class="form-label">Passenger Name</label>
-          <input type="text" id="passengerName" class="form-input" value="Rahul Sharma">
+          <input type="text" id="passengerName" class="form-input" readonly style="opacity: 0.85; cursor: not-allowed;" placeholder="Logged in user name">
         </div>
 
         <div class="form-group">
           <label class="form-label">Passenger Email</label>
-          <input type="email" id="passengerEmail" class="form-input" value="rahul@company.com">
+          <input type="email" id="passengerEmail" class="form-input" readonly style="opacity: 0.85; cursor: not-allowed;" placeholder="Logged in user email">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -854,8 +885,21 @@
 
     <script>
     let authToken = localStorage.getItem('shuttleAuthToken') || '';
-    let currentUser = JSON.parse(localStorage.getItem('shuttleUser') || 'null');
+    let currentUser = null;
+    try {
+      currentUser = JSON.parse(localStorage.getItem('shuttleUser') || 'null');
+    } catch (e) {
+      localStorage.removeItem('shuttleUser');
+    }
     let activeTripId = null;
+    let activeTripCapacity = 0;
+    let activeStops = [];
+
+    function fillLogin(email, password) {
+      document.getElementById('authEmail').value = email;
+      document.getElementById('authPassword').value = password;
+      showToast('Form filled for ' + email + '. Click Sign in to proceed!');
+    }
 
     async function safeJson(res) {
       const text = await res.text();
@@ -872,8 +916,25 @@
     }
 
     function updateAuthUi() {
-      document.getElementById('authPage').style.display = currentUser ? 'none' : 'flex';
-      document.getElementById('appContainer').style.display = currentUser ? 'block' : 'none';
+      const authPage = document.getElementById('authPage');
+      const appContainer = document.getElementById('appContainer');
+      const userChip = document.getElementById('userChip');
+      const pName = document.getElementById('passengerName');
+      const pEmail = document.getElementById('passengerEmail');
+
+      if (currentUser && currentUser.name) {
+        authPage.style.display = 'none';
+        appContainer.style.display = 'block';
+        userChip.textContent = currentUser.name + ' (' + (currentUser.email || '') + ')';
+        if (pName) pName.value = currentUser.name || '';
+        if (pEmail) pEmail.value = currentUser.email || '';
+      } else {
+        authPage.style.display = 'flex';
+        appContainer.style.display = 'none';
+        userChip.textContent = 'Guest';
+        if (pName) pName.value = '';
+        if (pEmail) pEmail.value = '';
+      }
     }
 
     function switchAuthMode(mode) {
@@ -886,41 +947,61 @@
 
     function saveSession(data) {
       authToken = data.token;
-      currentUser = data;
+      currentUser = {
+        token: data.token,
+        userId: data.userId,
+        name: data.name,
+        email: data.email,
+        role: data.role
+      };
       localStorage.setItem('shuttleAuthToken', authToken);
       localStorage.setItem('shuttleUser', JSON.stringify(currentUser));
       updateAuthUi();
-      document.getElementById('passengerName').value = data.name || '';
-      document.getElementById('passengerEmail').value = data.email || '';
     }
 
     async function loginUser() {
-      const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value;
-      const res = await fetch('/api/auth/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await safeJson(res);
-      if (!res.ok) { showToast(data.message || 'Login failed.', true); return; }
-      saveSession(data);
-      if (await loadTrips()) refreshDashboard();
-      showToast('Login successful.');
+      try {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        if (!email || !password) {
+          showToast('Please enter both email and password.', true);
+          return;
+        }
+        const res = await fetch('/api/auth/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await safeJson(res);
+        if (!res.ok) { showToast(data.message || 'Login failed.', true); return; }
+        saveSession(data);
+        if (await loadTrips()) refreshDashboard();
+        showToast('Login successful. Welcome back, ' + data.name + '!');
+      } catch (e) {
+        showToast('Login request failed. Please check backend server.', true);
+      }
     }
 
     async function registerUser() {
-      const name = document.getElementById('authName').value.trim();
-      const email = document.getElementById('signupEmail').value.trim();
-      const password = document.getElementById('signupPassword').value;
-      const res = await fetch('/api/auth/register', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
-      });
-      const data = await safeJson(res);
-      if (!res.ok) { showToast(data.message || 'Signup failed.', true); return; }
-      saveSession(data);
-      if (await loadTrips()) refreshDashboard();
-      showToast('Account created and signed in.');
+      try {
+        const name = document.getElementById('authName').value.trim();
+        const email = document.getElementById('signupEmail').value.trim();
+        const password = document.getElementById('signupPassword').value;
+        if (!name || !email || !password) {
+          showToast('Please fill out all fields.', true);
+          return;
+        }
+        const res = await fetch('/api/auth/register', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+        const data = await safeJson(res);
+        if (!res.ok) { showToast(data.message || 'Signup failed.', true); return; }
+        saveSession(data);
+        if (await loadTrips()) refreshDashboard();
+        showToast('Account created successfully! Welcome, ' + data.name + '!');
+      } catch (e) {
+        showToast('Signup request failed. Please check backend server.', true);
+      }
     }
 
     function logout() {
@@ -937,20 +1018,71 @@
 
     async function loadTrips() {
       if (!authToken) return false;
-      const res = await fetch('/api/trips', { headers: { 'Authorization': 'Bearer ' + authToken } });
-      const trips = await safeJson(res);
-      if (!res.ok) {
-        if (res.status === 401) return false;
-        showToast(trips.message || 'Could not load trips.', true);
+      try {
+        const res = await fetch('/api/trips', { headers: { 'Authorization': 'Bearer ' + authToken } });
+        if (res.status === 401) {
+          return false;
+        }
+        const trips = await safeJson(res);
+        if (!res.ok) {
+          showToast(trips.message || 'Could not load trips.', true);
+          return true;
+        }
+        if (!Array.isArray(trips) || trips.length === 0) {
+          activeTripId = null;
+          activeTripCapacity = 0;
+          document.getElementById('activeTripId').textContent = '-';
+          document.querySelector('.bus-header span:last-child').textContent = 'NO TRIP AVAILABLE';
+          document.getElementById('seatGrid').innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);text-align:center;padding:20px;">No scheduled trip available.</div>';
+          return true;
+        }
+        activeTripId = trips[0].id;
+        activeTripCapacity = Number(trips[0].capacity) || 0;
+        document.getElementById('activeTripId').textContent = activeTripId;
+        document.querySelector('.bus-header span:last-child').textContent = 'SHUTTLE CAPACITY: ' + activeTripCapacity;
+        await loadTripStops();
+        return true;
+      } catch (e) {
+        showToast('Connection error loading trips.', true);
         return true;
       }
-      if (!Array.isArray(trips) || trips.length === 0) {
-        showToast('No scheduled trips are available yet.', true);
-        return true;
+    }
+
+    function updateToStopOptions() {
+      const fromSelect = document.getElementById('fromStop');
+      const toSelect = document.getElementById('toStop');
+      if (!activeStops || activeStops.length < 2) return;
+      const selectedFromIndex = fromSelect.selectedIndex >= 0 ? fromSelect.selectedIndex : 0;
+      const validToStops = activeStops.slice(selectedFromIndex + 1);
+      const currentToVal = toSelect.value;
+      toSelect.innerHTML = validToStops.map(function(s) {
+        return '<option value="' + s.name + '">' + s.name + ' (Seq ' + s.sequenceNum + ')</option>';
+      }).join('');
+      if (validToStops.some(function(s) { return s.name === currentToVal; })) {
+        toSelect.value = currentToVal;
+      } else if (validToStops.length > 0) {
+        toSelect.value = validToStops[validToStops.length - 1].name;
       }
-      activeTripId = trips[0].id;
-      document.getElementById('activeTripId').textContent = activeTripId;
-      return true;
+    }
+
+    async function loadTripStops() {
+      const res = await fetch('/api/trips/' + activeTripId + '/stops', {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const stops = await safeJson(res);
+      if (!res.ok || !Array.isArray(stops) || stops.length < 2) {
+        activeStops = [];
+        showToast('The selected trip has no valid route stops.', true);
+        return;
+      }
+      activeStops = stops;
+      const fromSelect = document.getElementById('fromStop');
+      fromSelect.innerHTML = stops.slice(0, -1).map(function(stop) {
+        return '<option value="' + stop.name + '">' + stop.name + ' (Seq ' + stop.sequenceNum + ')</option>';
+      }).join('');
+      
+      fromSelect.onchange = updateToStopOptions;
+      updateToStopOptions();
     }
 
     async function ensureToken() {
@@ -962,10 +1094,10 @@
       const from = document.getElementById('fromStop').value;
       const to = document.getElementById('toStop').value;
       const banner = document.getElementById('availBanner');
-      if (from >= to) {
+      if (!from || !to) {
         banner.style.display = 'block';
         banner.className = 'avail-banner avail-warning';
-        banner.textContent = 'Invalid Segment: Pickup stop must be before Drop stop.';
+        banner.textContent = 'Please select valid pickup and drop stops.';
         return;
       }
       const token = await ensureToken();
@@ -978,10 +1110,10 @@
         banner.style.display = 'block';
         if (res.ok && data.availableCount > 0) {
           banner.className = 'avail-banner avail-success';
-          banner.textContent = data.availableCount + ' Seat(s) Available for ' + from + ' to ' + to + '. Seats: [' + (data.availableSeats || []).join(', ') + ']';
+          banner.textContent = data.availableCount + ' Seat(s) Available for ' + from + ' to ' + to + '. Free Seats: [' + (data.availableSeats || []).join(', ') + ']';
         } else if (res.ok) {
           banner.className = 'avail-banner avail-warning';
-          banner.textContent = 'All seats fully booked for ' + from + ' to ' + to + '. You will be Waitlisted.';
+          banner.textContent = 'All seats fully booked for ' + from + ' to ' + to + '. Confirming booking will add you to FIFO Waitlist.';
         } else {
           banner.className = 'avail-banner avail-warning';
           banner.textContent = data.message || 'No availability found for the selected trip.';
@@ -1008,9 +1140,9 @@
         if (!res.ok) {
           showToast(data.message || 'Booking failed (HTTP ' + res.status + ').', true);
         } else if (data.status === 'CONFIRMED') {
-          showToast('Booking CONFIRMED! Seat #' + data.seatNumber + ' for ' + from + ' to ' + to);
+          showToast('Booking CONFIRMED! Assigned Seat #' + data.seatNumber + ' for ' + from + ' to ' + to);
         } else if (data.status === 'WAITLISTED') {
-          showToast(data.message || 'Added to waitlist!');
+          showToast(data.message || 'No physical seats left for this segment. Added to FIFO waitlist!');
         } else {
           showToast(data.message || 'Booking submitted!');
         }
@@ -1030,7 +1162,7 @@
         if (!res.ok) {
           showToast(data.message || 'Could not cancel booking #' + id, true);
         } else {
-          showToast('Booking #' + id + ' cancelled. Waitlist auto-promoted!');
+          showToast('Booking #' + id + ' cancelled. Eligible waitlisted passenger auto-promoted!');
         }
         refreshDashboard();
       } catch (err) { showToast('Cancellation error: ' + err.message, true); }
@@ -1047,10 +1179,10 @@
         const waitBody = document.getElementById('waitlistTableBody');
         if (Array.isArray(waitlist) && waitlist.length > 0) {
           waitBody.innerHTML = waitlist.map(function(w) {
-            return '<tr><td>Pos #' + w.position + '</td><td>' + w.fromStop + ' to ' + w.toStop + '</td><td>' + w.status + '</td></tr>';
+            return '<tr><td>Pos #' + w.position + '</td><td>' + w.fromStop + ' to ' + w.toStop + '</td><td><span class="badge" style="background:rgba(245,158,11,0.15);color:var(--warning);">' + w.status + '</span></td></tr>';
           }).join('');
         } else {
-          waitBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Waitlist is currently empty.</td></tr>';
+          waitBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-dim);">No active waitlist entries.</td></tr>';
         }
       } catch (e) {}
       try {
@@ -1062,9 +1194,9 @@
         if (Array.isArray(bookings) && bookings.length > 0) {
           bookingBody.innerHTML = bookings.filter(function(b) { return b.tripId === activeTripId; }).map(function(b) {
             return '<tr><td>#' + b.bookingId + '</td><td>Seat ' + b.seatNumber + '</td><td>' + b.fromStop + ' to ' + b.toStop + '</td><td><button class="btn btn-danger" style="padding:4px 8px;font-size:0.72rem;" onclick="cancelBooking(' + b.bookingId + ')">Cancel</button></td></tr>';
-          }).join('') || '<tr><td colspan="4" style="text-align:center;">No active bookings for this trip.</td></tr>';
+          }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);">No active bookings for this trip.</td></tr>';
         } else {
-          bookingBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No active bookings for this trip.</td></tr>';
+          bookingBody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);">No active bookings for this trip.</td></tr>';
         }
       } catch (e) {}
       renderSeatMatrix();
@@ -1073,28 +1205,32 @@
     async function renderSeatMatrix() {
       const grid = document.getElementById('seatGrid');
       const token = await ensureToken();
-      if (!token || !activeTripId) return;
+      if (!token || !activeTripId || activeStops.length < 2) return;
       let availAtoB = [], availBtoD = [];
+      const firstFrom = activeStops[0].name;
+      const firstTo = activeStops[1].name;
+      const secondFrom = activeStops[1].name;
+      const secondTo = activeStops[activeStops.length - 1].name;
       try {
-        const r1 = await fetch('/api/trips/' + activeTripId + '/availability?from=Stop%20A&to=Stop%20B', { headers: { 'Authorization': 'Bearer ' + token } });
+        const r1 = await fetch('/api/trips/' + activeTripId + '/availability?from=' + encodeURIComponent(firstFrom) + '&to=' + encodeURIComponent(firstTo), { headers: { 'Authorization': 'Bearer ' + token } });
         if (r1.ok) { const d1 = await safeJson(r1); availAtoB = d1.availableSeats || []; }
-        const r2 = await fetch('/api/trips/' + activeTripId + '/availability?from=Stop%20B&to=Stop%20D', { headers: { 'Authorization': 'Bearer ' + token } });
+        const r2 = await fetch('/api/trips/' + activeTripId + '/availability?from=' + encodeURIComponent(secondFrom) + '&to=' + encodeURIComponent(secondTo), { headers: { 'Authorization': 'Bearer ' + token } });
         if (r2.ok) { const d2 = await safeJson(r2); availBtoD = d2.availableSeats || []; }
       } catch(e) {}
-      const seats = [1, 2];
+      const seats = Array.from({ length: activeTripCapacity }, function(_, index) { return index + 1; });
       grid.innerHTML = seats.map(function(s) {
         const freeAB = availAtoB.includes(s), freeBD = availBtoD.includes(s);
         let badge = '<span class="seat-badge seat-free">FREE</span>';
-        let details = '<div class="seat-segment-item">Available on all stops</div>';
+        let details = '<div class="seat-segment-item">Available on all segments</div>';
         if (!freeAB && !freeBD) {
           badge = '<span class="seat-badge seat-shared">REUSED/SHARED</span>';
-          details = '<div class="seat-segment-item">Booked: Stop A to Stop B</div><div class="seat-segment-item">Reused: Stop B to Stop D</div>';
+          details = '<div class="seat-segment-item">Booked: ' + firstFrom + ' to ' + firstTo + '</div><div class="seat-segment-item">Reused: ' + secondFrom + ' to ' + secondTo + '</div>';
         } else if (!freeAB) {
           badge = '<span class="seat-badge seat-occupied">PARTIAL</span>';
-          details = '<div class="seat-segment-item">Occupied: Stop A to B</div><div class="seat-segment-item">Free: Stop B to D</div>';
+          details = '<div class="seat-segment-item">Occupied: ' + firstFrom + ' to ' + firstTo + '</div><div class="seat-segment-item">Free: ' + secondFrom + ' to ' + secondTo + '</div>';
         } else if (!freeBD) {
           badge = '<span class="seat-badge seat-occupied">PARTIAL</span>';
-          details = '<div class="seat-segment-item">Free: Stop A to B</div><div class="seat-segment-item">Occupied: Stop B to D</div>';
+          details = '<div class="seat-segment-item">Free: ' + firstFrom + ' to ' + firstTo + '</div><div class="seat-segment-item">Occupied: ' + secondFrom + ' to ' + secondTo + '</div>';
         }
         return '<div class="seat-card"><div class="seat-num">Seat ' + s + '</div>' + badge + '<div class="seat-segments">' + details + '</div></div>';
       }).join('');
@@ -1103,11 +1239,13 @@
     window.addEventListener('DOMContentLoaded', async function() {
       updateAuthUi();
       if (authToken && currentUser) {
-        if (await loadTrips()) refreshDashboard();
+        const loaded = await loadTrips();
+        if (loaded) refreshDashboard();
         else logout();
       }
     });
   </script>
+
 
 </body>
 </html>
