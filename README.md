@@ -116,7 +116,7 @@ public BookingResponse book(Long tripId, BookingRequest request) {
 
 | Method | Endpoint | Description | Role |
 |---|---|---|---|
-| `POST` | `/api/auth/register` | Register user (EMPLOYEE / ADMIN) | Public |
+| `POST` | `/api/auth/register` | Register a new employee | Public |
 | `POST` | `/api/auth/login` | Login and obtain JWT token | Public |
 | `POST` | `/api/routes` | Create new route | `ADMIN` |
 | `POST` | `/api/routes/{routeId}/stops` | Add sequenced stop to route | `ADMIN` |
@@ -130,6 +130,26 @@ public BookingResponse book(Long tripId, BookingRequest request) {
 | `GET` | `/api/bookings/{bookingId}` | Get booking details | Authenticated |
 | `GET` | `/api/waitlist` | Get current user's waitlist entries | Authenticated |
 | `GET` | `/api/trips/{tripId}/waitlist` | View FIFO waitlist for trip | `ADMIN` |
+| `PUT` | `/api/bookings/{bookingId}/no-show` | Mark a booking as NO_SHOW and promote waitlist | Owner / `ADMIN` |
+| `PATCH` | `/api/trips/{tripId}/position?currentStopSequence=N` | Update active trip position | `ADMIN` |
+| `POST` | `/api/vehicles` | Register a shuttle vehicle | `ADMIN` |
+| `PUT` | `/api/trips/{tripId}/vehicle/{vehicleId}` | Assign/reassign a vehicle | `ADMIN` |
+
+Public registration always creates an `EMPLOYEE`. Administrator accounts must be provisioned by a trusted database migration or operator workflow; clients cannot self-assign the `ADMIN` role.
+
+### Operational behavior
+
+- A trip in `ACTIVE` status rejects bookings whose boarding stop has already been passed. Administrators advance the trip position with the position endpoint.
+- Cancellation and no-show both release the segment and trigger earliest-eligible waitlist promotion. Waitlist positions remain monotonic across cancellations and promotions.
+- Vehicle reassignment validates that the vehicle is active and has capacity at least equal to the trip capacity. Existing seat numbers remain stable because seats belong to the trip, not the vehicle.
+- Booking, cancellation, no-show, status changes, and trip-position changes evict availability cache entries. Redis cache operation failures are logged and fall back to the database path.
+- `/actuator/health`, `/actuator/metrics`, and `/actuator/prometheus` expose health and monitoring data. Custom counters include `shuttle.booking.confirmed`, `shuttle.booking.waitlisted`, `shuttle.booking.cancelled`, and `shuttle.booking.no_show`.
+
+### Recovery and trade-offs
+
+- PostgreSQL is the source of truth; Redis is an optimization layer and may be restarted or flushed without data loss. Use the PostgreSQL backup policy for recovery: daily full backups plus WAL/point-in-time recovery in production.
+- Pessimistic seat-row locking favors correctness over maximum write throughput. Availability uses an `O(S × B)` scan, which is simple and reliable for normal shuttle capacities; larger fleets should add an interval index or precomputed segment bitmap.
+- Waitlist promotion selects the earliest waiting entry whose requested interval fits a currently available seat. This preserves fairness without blocking unrelated segments behind an incompatible request.
 
 ---
 
@@ -150,11 +170,16 @@ This spins up:
 
 ### 2. Running Locally with Maven
 ```bash
+# For quick local development with H2 + in-memory cache
+mvn clean test
+$env:SPRING_PROFILES_ACTIVE='local'; mvn spring-boot:run -DskipTests
+# app will start on http://localhost:9090
+
+# Or, if you want to run against PostgreSQL + Redis locally:
 # Ensure PostgreSQL is running on localhost:5432 (database: office_shuttle)
 # Ensure Redis is running on localhost:6379
-
-mvn clean test
-mvn spring-boot:run
+# $env:SPRING_PROFILES_ACTIVE='prod'; mvn spring-boot:run -DskipTests
+# app will start on http://localhost:8080
 ```
 
 ### 3. Interactive Swagger Documentation

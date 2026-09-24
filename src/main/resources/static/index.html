@@ -44,6 +44,87 @@
       line-height: 1.5;
     }
 
+    .auth-page {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+    }
+
+    .auth-shell {
+      width: min(460px, 100%);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    .auth-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .auth-brand h1 {
+      font-size: 1.45rem;
+      font-weight: 800;
+    }
+
+    .auth-brand p {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 3px;
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 5px;
+      margin-bottom: 24px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-sm);
+    }
+
+    .auth-tab {
+      border: 0;
+      border-radius: 6px;
+      padding: 10px;
+      color: var(--text-muted);
+      background: transparent;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .auth-tab.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .auth-form-title {
+      font-size: 1.15rem;
+      margin-bottom: 6px;
+    }
+
+    .auth-form-subtitle {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 22px;
+    }
+
+    .auth-submit {
+      width: 100%;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
     /* Background glow accents */
     .bg-glow {
       position: fixed;
@@ -534,7 +615,53 @@
   <div class="bg-glow glow-1"></div>
   <div class="bg-glow glow-2"></div>
 
-  <div class="app-container">
+  <section id="authPage" class="auth-page">
+    <div class="auth-shell">
+      <div class="auth-brand">
+        <div class="brand-icon">🚌</div>
+        <div>
+          <h1>MoveInSync Shuttle</h1>
+          <p>Secure employee shuttle booking</p>
+        </div>
+      </div>
+      <div class="auth-tabs">
+        <button id="loginTab" class="auth-tab active" onclick="switchAuthMode('login')">Login</button>
+        <button id="signupTab" class="auth-tab" onclick="switchAuthMode('signup')">Create account</button>
+      </div>
+      <div id="loginForm">
+        <h2 class="auth-form-title">Welcome back</h2>
+        <p class="auth-form-subtitle">Sign in to manage your shuttle bookings.</p>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="authEmail" class="form-input" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="authPassword" class="form-input" autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary auth-submit" onclick="loginUser()">🔓 Sign in</button>
+      </div>
+      <div id="signupForm" style="display: none;">
+        <h2 class="auth-form-title">Create employee account</h2>
+        <p class="auth-form-subtitle">Use your real details to start booking.</p>
+        <div class="form-group">
+          <label class="form-label">Full name</label>
+          <input type="text" id="authName" class="form-input" autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="signupEmail" class="form-input" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="signupPassword" class="form-input" autocomplete="new-password">
+        </div>
+        <button class="btn btn-primary auth-submit" onclick="registerUser()">✍ Create account</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="appContainer" class="app-container" style="display: none;">
     <!-- Header -->
     <header>
       <div class="brand">
@@ -545,9 +672,9 @@
         </div>
       </div>
       <div class="header-actions">
-        <div class="badge badge-live">Backend Online: Port 8081</div>
+        <div class="badge badge-live">Backend Online</div>
         <button class="btn btn-secondary" onclick="window.open('/swagger-ui/index.html', '_blank')">📖 API Docs (Swagger)</button>
-        <button class="btn btn-primary" onclick="quickSeedDemo()">⚡ Quick Setup Demo</button>
+        <button class="btn btn-secondary" onclick="logout()">↪ Logout</button>
       </div>
     </header>
 
@@ -687,7 +814,7 @@
             </thead>
             <tbody id="bookingsTableBody">
               <tr>
-                <td colspan="4" style="text-align: center; color: var(--text-dim);">No active bookings yet. Use the booking form or click 'Quick Setup Demo'.</td>
+                <td colspan="4" style="text-align: center; color: var(--text-dim);">Sign in to view your bookings.</td>
               </tr>
             </tbody>
           </table>
@@ -725,11 +852,17 @@
 
   <div id="toast"></div>
 
-  <script>
-    let currentAuthToken = '';
-    const activeTripId = 1;
+    <script>
+    let authToken = localStorage.getItem('shuttleAuthToken') || '';
+    let currentUser = JSON.parse(localStorage.getItem('shuttleUser') || 'null');
+    let activeTripId = null;
 
-    // Toast notification
+    async function safeJson(res) {
+      const text = await res.text();
+      if (!text || text.trim() === '') return {};
+      try { return JSON.parse(text); } catch (e) { return { message: text }; }
+    }
+
     function showToast(message, isError = false) {
       const toast = document.getElementById('toast');
       toast.textContent = message;
@@ -738,288 +871,243 @@
       setTimeout(() => { toast.className = ''; }, 3500);
     }
 
-    // Initialize or authenticate default user
-    async function ensureToken(name = "Admin", email = "admin@shuttle.com", role = "ADMIN") {
-      try {
-        const res = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password: 'password123', role })
-        });
-        const data = await res.json();
-        if (data.token) {
-          currentAuthToken = data.token;
-          return data.token;
-        }
-      } catch (err) {
-        // Fallback login
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password: 'password123' })
-        });
-        const data = await res.json();
-        if (data.token) {
-          currentAuthToken = data.token;
-          return data.token;
-        }
-      }
-      return currentAuthToken;
+    function updateAuthUi() {
+      document.getElementById('authPage').style.display = currentUser ? 'none' : 'flex';
+      document.getElementById('appContainer').style.display = currentUser ? 'block' : 'none';
     }
 
-    // Quick Seed Demo: Creates Route, 4 Stops, Trip with capacity 2, and 2 sample bookings to showcase seat sharing!
-    async function quickSeedDemo() {
-      showToast("Setting up sample route, stops, and bookings...");
-      const token = await ensureToken();
-
-      try {
-        // 1. Create Route
-        const routeRes = await fetch('/api/routes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ name: 'Tech Corridor Express', description: 'Daily commute corridor' })
-        });
-        const route = await routeRes.json();
-        const routeId = route.id || 1;
-
-        // 2. Add Stops
-        await fetch(`/api/routes/${routeId}/stops`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ name: 'Stop A', sequenceNum: 1, arrivalTime: '08:00' })
-        }).catch(() => {});
-        await fetch(`/api/routes/${routeId}/stops`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ name: 'Stop B', sequenceNum: 2, arrivalTime: '08:20' })
-        }).catch(() => {});
-        await fetch(`/api/routes/${routeId}/stops`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ name: 'Stop C', sequenceNum: 3, arrivalTime: '08:40' })
-        }).catch(() => {});
-        await fetch(`/api/routes/${routeId}/stops`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ name: 'Stop D', sequenceNum: 4, arrivalTime: '09:00' })
-        }).catch(() => {});
-
-        // 3. Create Trip
-        await fetch('/api/trips', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ routeId: routeId, tripDate: '2026-10-01', capacity: 2 })
-        }).catch(() => {});
-
-        // 4. Create Booking 1: Passenger 1 on Stop A -> Stop B (Takes Seat 1)
-        await fetch(`/api/trips/${activeTripId}/bookings`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ fromStop: 'Stop A', toStop: 'Stop B' })
-        }).catch(() => {});
-
-        // 5. Create Booking 2: Passenger 2 on Stop B -> Stop D (REUSES Seat 1 without conflict!)
-        await fetch(`/api/trips/${activeTripId}/bookings`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ fromStop: 'Stop B', toStop: 'Stop D' })
-        }).catch(() => {});
-
-        showToast("Demo route, stops, and seat-sharing bookings created!");
-        refreshDashboard();
-      } catch (e) {
-        showToast("Error seeding demo: " + e.message, true);
-      }
+    function switchAuthMode(mode) {
+      const loginMode = mode === 'login';
+      document.getElementById('loginForm').style.display = loginMode ? 'block' : 'none';
+      document.getElementById('signupForm').style.display = loginMode ? 'none' : 'block';
+      document.getElementById('loginTab').classList.toggle('active', loginMode);
+      document.getElementById('signupTab').classList.toggle('active', !loginMode);
     }
 
-    // Check Availability
+    function saveSession(data) {
+      authToken = data.token;
+      currentUser = data;
+      localStorage.setItem('shuttleAuthToken', authToken);
+      localStorage.setItem('shuttleUser', JSON.stringify(currentUser));
+      updateAuthUi();
+      document.getElementById('passengerName').value = data.name || '';
+      document.getElementById('passengerEmail').value = data.email || '';
+    }
+
+    async function loginUser() {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const res = await fetch('/api/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await safeJson(res);
+      if (!res.ok) { showToast(data.message || 'Login failed.', true); return; }
+      saveSession(data);
+      if (await loadTrips()) refreshDashboard();
+      showToast('Login successful.');
+    }
+
+    async function registerUser() {
+      const name = document.getElementById('authName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const res = await fetch('/api/auth/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+      const data = await safeJson(res);
+      if (!res.ok) { showToast(data.message || 'Signup failed.', true); return; }
+      saveSession(data);
+      if (await loadTrips()) refreshDashboard();
+      showToast('Account created and signed in.');
+    }
+
+    function logout() {
+      authToken = '';
+      currentUser = null;
+      activeTripId = null;
+      localStorage.removeItem('shuttleAuthToken');
+      localStorage.removeItem('shuttleUser');
+      updateAuthUi();
+      switchAuthMode('login');
+      document.getElementById('bookingsTableBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);">Sign in to view your bookings.</td></tr>';
+      showToast('Signed out.');
+    }
+
+    async function loadTrips() {
+      if (!authToken) return false;
+      const res = await fetch('/api/trips', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const trips = await safeJson(res);
+      if (!res.ok) {
+        if (res.status === 401) return false;
+        showToast(trips.message || 'Could not load trips.', true);
+        return true;
+      }
+      if (!Array.isArray(trips) || trips.length === 0) {
+        showToast('No scheduled trips are available yet.', true);
+        return true;
+      }
+      activeTripId = trips[0].id;
+      document.getElementById('activeTripId').textContent = activeTripId;
+      return true;
+    }
+
+    async function ensureToken() {
+      if (!authToken) showToast('Please login or create an account first.', true);
+      return authToken;
+    }
+
     async function checkAvailability() {
       const from = document.getElementById('fromStop').value;
       const to = document.getElementById('toStop').value;
       const banner = document.getElementById('availBanner');
-
       if (from >= to) {
         banner.style.display = 'block';
         banner.className = 'avail-banner avail-warning';
-        banner.innerHTML = '⚠️ <strong>Invalid Segment:</strong> Pickup stop must be before Drop stop in route order.';
+        banner.textContent = 'Invalid Segment: Pickup stop must be before Drop stop.';
         return;
       }
-
       const token = await ensureToken();
+      if (!token || !activeTripId) return;
       try {
-        const res = await fetch(`/api/trips/${activeTripId}/availability?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const res = await fetch('/api/trips/' + activeTripId + '/availability?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to), {
+          headers: { 'Authorization': 'Bearer ' + token }
         });
-        const data = await res.json();
-
+        const data = await safeJson(res);
         banner.style.display = 'block';
-        if (data.availableCount > 0) {
+        if (res.ok && data.availableCount > 0) {
           banner.className = 'avail-banner avail-success';
-          banner.innerHTML = `✅ <strong>${data.availableCount} Physical Seat(s) Available</strong> for segment <strong>${from} → ${to}</strong>! Seats: [${data.availableSeats.join(', ')}]`;
+          banner.textContent = data.availableCount + ' Seat(s) Available for ' + from + ' to ' + to + '. Seats: [' + (data.availableSeats || []).join(', ') + ']';
+        } else if (res.ok) {
+          banner.className = 'avail-banner avail-warning';
+          banner.textContent = 'All seats fully booked for ' + from + ' to ' + to + '. You will be Waitlisted.';
         } else {
           banner.className = 'avail-banner avail-warning';
-          banner.innerHTML = `⏳ <strong>All seats fully booked</strong> for <strong>${from} → ${to}</strong>. Booking now will place you on the <strong>Waitlist</strong>.`;
+          banner.textContent = data.message || 'No availability found for the selected trip.';
         }
       } catch (err) {
         banner.style.display = 'block';
         banner.className = 'avail-banner avail-warning';
-        banner.textContent = 'Could not fetch availability. Ensure backend is running.';
+        banner.textContent = 'Could not fetch availability. Please try again.';
       }
     }
 
-    // Book a segment
     async function bookSegment() {
       const from = document.getElementById('fromStop').value;
       const to = document.getElementById('toStop').value;
-      const name = document.getElementById('passengerName').value || 'Passenger';
-      const email = document.getElementById('passengerEmail').value || 'passenger@company.com';
-
-      const token = await ensureToken(name, email, 'EMPLOYEE');
+      const token = await ensureToken();
+      if (!token || !activeTripId) return;
       try {
-        const res = await fetch(`/api/trips/${activeTripId}/bookings`, {
+        const res = await fetch('/api/trips/' + activeTripId + '/bookings', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
           body: JSON.stringify({ fromStop: from, toStop: to })
         });
-        const data = await res.json();
-
-        if (data.status === 'CONFIRMED') {
-          showToast(`🎉 Booking CONFIRMED! Seat #${data.seatNumber} allocated for ${from} → ${to}`);
+        const data = await safeJson(res);
+        if (!res.ok) {
+          showToast(data.message || 'Booking failed (HTTP ' + res.status + ').', true);
+        } else if (data.status === 'CONFIRMED') {
+          showToast('Booking CONFIRMED! Seat #' + data.seatNumber + ' for ' + from + ' to ' + to);
         } else if (data.status === 'WAITLISTED') {
-          showToast(`⏳ ${data.message || 'Added to waitlist!'}`);
-        } else if (data.message) {
-          showToast(data.message, true);
+          showToast(data.message || 'Added to waitlist!');
+        } else {
+          showToast(data.message || 'Booking submitted!');
         }
         refreshDashboard();
-      } catch (err) {
-        showToast("Booking failed: " + err.message, true);
-      }
+      } catch (err) { showToast('Booking error: ' + err.message, true); }
     }
 
-    // Cancel a booking (triggers waitlist promotion)
     async function cancelBooking(id) {
-      if (!confirm(`Cancel booking #${id}? This will free the segment and automatically promote the next waitlisted passenger!`)) return;
+      if (!confirm('Cancel booking #' + id + '? Waitlist will be auto-promoted!')) return;
       const token = await ensureToken();
       try {
-        const res = await fetch(`/api/bookings/${id}`, {
+        const res = await fetch('/api/bookings/' + id, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': 'Bearer ' + token }
         });
-        const data = await res.json();
-        showToast(`Booking #${id} cancelled. Check waitlist for promotions!`);
+        const data = await safeJson(res);
+        if (!res.ok) {
+          showToast(data.message || 'Could not cancel booking #' + id, true);
+        } else {
+          showToast('Booking #' + id + ' cancelled. Waitlist auto-promoted!');
+        }
         refreshDashboard();
-      } catch (err) {
-        showToast("Cancellation error: " + err.message, true);
-      }
+      } catch (err) { showToast('Cancellation error: ' + err.message, true); }
     }
 
-    // Refresh Dashboard (seats, bookings, waitlist)
     async function refreshDashboard() {
       const token = await ensureToken();
-
-      // Fetch waitlist
+      if (!token || !activeTripId) return;
       try {
-        const waitRes = await fetch(`/api/trips/${activeTripId}/waitlist`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const waitRes = await fetch('/api/waitlist', {
+          headers: { 'Authorization': 'Bearer ' + token }
         });
-        const waitlist = await waitRes.json();
+        const waitlist = await safeJson(waitRes);
         const waitBody = document.getElementById('waitlistTableBody');
         if (Array.isArray(waitlist) && waitlist.length > 0) {
-          waitBody.innerHTML = waitlist.map(w => `
-            <tr>
-              <td><span class="badge" style="background: rgba(245, 158, 11, 0.2); color: var(--warning);">Pos #${w.position}</span></td>
-              <td><strong>${w.fromStop} → ${w.toStop}</strong></td>
-              <td><span class="badge badge-live" style="color: var(--warning); border-color: rgba(245,158,11,0.3);">${w.status}</span></td>
-            </tr>
-          `).join('');
+          waitBody.innerHTML = waitlist.map(function(w) {
+            return '<tr><td>Pos #' + w.position + '</td><td>' + w.fromStop + ' to ' + w.toStop + '</td><td>' + w.status + '</td></tr>';
+          }).join('');
         } else {
-          waitBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-dim);">Waitlist is currently empty.</td></tr>';
+          waitBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Waitlist is currently empty.</td></tr>';
         }
       } catch (e) {}
-
-      // Render Seats
+      try {
+        const bookingRes = await fetch('/api/my-bookings', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const bookings = await safeJson(bookingRes);
+        const bookingBody = document.getElementById('bookingsTableBody');
+        if (Array.isArray(bookings) && bookings.length > 0) {
+          bookingBody.innerHTML = bookings.filter(function(b) { return b.tripId === activeTripId; }).map(function(b) {
+            return '<tr><td>#' + b.bookingId + '</td><td>Seat ' + b.seatNumber + '</td><td>' + b.fromStop + ' to ' + b.toStop + '</td><td><button class="btn btn-danger" style="padding:4px 8px;font-size:0.72rem;" onclick="cancelBooking(' + b.bookingId + ')">Cancel</button></td></tr>';
+          }).join('') || '<tr><td colspan="4" style="text-align:center;">No active bookings for this trip.</td></tr>';
+        } else {
+          bookingBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No active bookings for this trip.</td></tr>';
+        }
+      } catch (e) {}
       renderSeatMatrix();
     }
 
-    // Render Seat Matrix
     async function renderSeatMatrix() {
       const grid = document.getElementById('seatGrid');
       const token = await ensureToken();
-
-      // Check availability for full trip Stop A -> Stop D
-      let availAtoB = [];
-      let availBtoD = [];
+      if (!token || !activeTripId) return;
+      let availAtoB = [], availBtoD = [];
       try {
-        const res1 = await fetch(`/api/trips/${activeTripId}/availability?from=Stop A&to=Stop B`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const d1 = await res1.json();
-        availAtoB = d1.availableSeats || [];
-
-        const res2 = await fetch(`/api/trips/${activeTripId}/availability?from=Stop B&to=Stop D`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const d2 = await res2.json();
-        availBtoD = d2.availableSeats || [];
+        const r1 = await fetch('/api/trips/' + activeTripId + '/availability?from=Stop%20A&to=Stop%20B', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (r1.ok) { const d1 = await safeJson(r1); availAtoB = d1.availableSeats || []; }
+        const r2 = await fetch('/api/trips/' + activeTripId + '/availability?from=Stop%20B&to=Stop%20D', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (r2.ok) { const d2 = await safeJson(r2); availBtoD = d2.availableSeats || []; }
       } catch(e) {}
-
-      // Hardcoded capacity = 2 for trip
       const seats = [1, 2];
-      const tbody = document.getElementById('bookingsTableBody');
-      let bookingsHtml = '';
-
-      grid.innerHTML = seats.map(s => {
-        const isFreeAtoB = availAtoB.includes(s);
-        const isFreeBtoD = availBtoD.includes(s);
-
+      grid.innerHTML = seats.map(function(s) {
+        const freeAB = availAtoB.includes(s), freeBD = availBtoD.includes(s);
         let badge = '<span class="seat-badge seat-free">FREE</span>';
-        let segmentDetails = '<div class="seat-segment-item">Available on all stops</div>';
-
-        if (!isFreeAtoB && !isFreeBtoD) {
-          badge = '<span class="seat-badge seat-shared">REUSED / SHARED</span>';
-          segmentDetails = `
-            <div class="seat-segment-item" style="color: #6ee7b7;">✓ Booked: Stop A → Stop B</div>
-            <div class="seat-segment-item" style="color: #93c5fd;">✓ Reused: Stop B → Stop D</div>
-          `;
-          bookingsHtml += `
-            <tr>
-              <td><strong>#101</strong></td>
-              <td>Seat ${s}</td>
-              <td>Stop A → Stop B</td>
-              <td><button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.72rem;" onclick="cancelBooking(1)">Cancel</button></td>
-            </tr>
-            <tr>
-              <td><strong>#102</strong></td>
-              <td>Seat ${s} (Reused)</td>
-              <td>Stop B → Stop D</td>
-              <td><button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.72rem;" onclick="cancelBooking(2)">Cancel</button></td>
-            </tr>
-          `;
-        } else if (!isFreeAtoB) {
+        let details = '<div class="seat-segment-item">Available on all stops</div>';
+        if (!freeAB && !freeBD) {
+          badge = '<span class="seat-badge seat-shared">REUSED/SHARED</span>';
+          details = '<div class="seat-segment-item">Booked: Stop A to Stop B</div><div class="seat-segment-item">Reused: Stop B to Stop D</div>';
+        } else if (!freeAB) {
           badge = '<span class="seat-badge seat-occupied">PARTIAL</span>';
-          segmentDetails = '<div class="seat-segment-item">Occupied: Stop A → Stop B</div><div class="seat-segment-item" style="color: var(--success);">Free: Stop B → Stop D</div>';
-        } else if (!isFreeBtoD) {
+          details = '<div class="seat-segment-item">Occupied: Stop A to B</div><div class="seat-segment-item">Free: Stop B to D</div>';
+        } else if (!freeBD) {
           badge = '<span class="seat-badge seat-occupied">PARTIAL</span>';
-          segmentDetails = '<div class="seat-segment-item" style="color: var(--success);">Free: Stop A → Stop B</div><div class="seat-segment-item">Occupied: Stop B → Stop D</div>';
+          details = '<div class="seat-segment-item">Free: Stop A to B</div><div class="seat-segment-item">Occupied: Stop B to D</div>';
         }
-
-        return `
-          <div class="seat-card">
-            <div class="seat-num">Seat ${s}</div>
-            ${badge}
-            <div class="seat-segments">
-              ${segmentDetails}
-            </div>
-          </div>
-        `;
+        return '<div class="seat-card"><div class="seat-num">Seat ' + s + '</div>' + badge + '<div class="seat-segments">' + details + '</div></div>';
       }).join('');
-
-      if (bookingsHtml) {
-        tbody.innerHTML = bookingsHtml;
-      }
     }
 
-    // Auto-init on page load
-    window.addEventListener('DOMContentLoaded', () => {
-      ensureToken();
-      refreshDashboard();
+    window.addEventListener('DOMContentLoaded', async function() {
+      updateAuthUi();
+      if (authToken && currentUser) {
+        if (await loadTrips()) refreshDashboard();
+        else logout();
+      }
     });
   </script>
+
 </body>
 </html>
