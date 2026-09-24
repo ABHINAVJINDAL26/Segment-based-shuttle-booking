@@ -3,6 +3,7 @@ package com.movinsync.shuttle.service;
 import com.movinsync.shuttle.dto.TripRequest;
 import com.movinsync.shuttle.entity.Route;
 import com.movinsync.shuttle.entity.Seat;
+import com.movinsync.shuttle.entity.Stop;
 import com.movinsync.shuttle.entity.Trip;
 import com.movinsync.shuttle.exception.RouteNotFoundException;
 import com.movinsync.shuttle.exception.TripNotFoundException;
@@ -66,6 +67,12 @@ public class TripService {
     public Trip getTrip(Long tripId) {
         return tripRepository.findById(tripId)
                 .orElseThrow(() -> new TripNotFoundException(tripId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Stop> getTripStops(Long tripId) {
+        Trip trip = getTrip(tripId);
+        return trip.getRoute().getStops();
     }
 
     @Transactional(readOnly = true)

@@ -30,7 +30,7 @@ public class WaitlistController {
     }
 
     @GetMapping("/trips/{tripId}/waitlist")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     @Operation(summary = "Get all active waitlist entries for a specific trip ordered by FIFO position")
     public ResponseEntity<List<WaitlistResponse>> getTripWaitlist(@PathVariable Long tripId) {
         return ResponseEntity.ok(waitlistService.getTripWaitlist(tripId));

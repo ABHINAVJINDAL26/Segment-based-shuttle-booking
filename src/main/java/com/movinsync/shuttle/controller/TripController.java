@@ -2,6 +2,7 @@ package com.movinsync.shuttle.controller;
 
 import com.movinsync.shuttle.dto.AvailabilityResponse;
 import com.movinsync.shuttle.dto.TripRequest;
+import com.movinsync.shuttle.entity.Stop;
 import com.movinsync.shuttle.entity.Trip;
 import com.movinsync.shuttle.service.AvailabilityService;
 import com.movinsync.shuttle.service.TripService;
@@ -45,6 +46,12 @@ public class TripController {
     @Operation(summary = "Get trip details by trip ID")
     public ResponseEntity<Trip> getTrip(@PathVariable Long tripId) {
         return ResponseEntity.ok(tripService.getTrip(tripId));
+    }
+
+    @GetMapping("/{tripId}/stops")
+    @Operation(summary = "List the stops for a trip in route order")
+    public ResponseEntity<List<Stop>> getTripStops(@PathVariable Long tripId) {
+        return ResponseEntity.ok(tripService.getTripStops(tripId));
     }
 
     @PutMapping("/{tripId}/status")
