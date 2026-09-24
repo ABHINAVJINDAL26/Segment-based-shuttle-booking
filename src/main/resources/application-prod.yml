@@ -1,7 +1,4 @@
 spring:
-  application:
-    name: office-shuttle-booking
-
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/office_shuttle}
     username: ${DB_USERNAME:postgres}
@@ -33,41 +30,17 @@ spring:
   cache:
     type: redis
     redis:
-      time-to-live: 300000   # 5 minutes in ms
+      time-to-live: 300000
 
 server:
   port: 8080
-  error:
-    include-message: never
-    include-stacktrace: never
 
 jwt:
   secret: ${JWT_SECRET:very-secret-key-at-least-256-bits-long-change-in-production-env}
-  expiration-ms: 86400000   # 24 hours
+  expiration-ms: 86400000
 
 logging:
   level:
     com.movinsync.shuttle: DEBUG
     org.springframework.security: WARN
     org.hibernate.SQL: WARN
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      show-details: when-authorized
-  metrics:
-    tags:
-      application: ${spring.application.name}
-
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    operations-sorter: method
