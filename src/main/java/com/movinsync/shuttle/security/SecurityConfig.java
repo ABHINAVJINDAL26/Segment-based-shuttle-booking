@@ -26,6 +26,8 @@ public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -51,6 +53,10 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(eh -> eh
+                .authenticationEntryPoint(customAuthenticationEntryPoint)
+                .accessDeniedHandler(customAccessDeniedHandler)
+            )
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/", "/index.html", "/static/**", "/css/**", "/js/**", "/favicon.ico").permitAll()
