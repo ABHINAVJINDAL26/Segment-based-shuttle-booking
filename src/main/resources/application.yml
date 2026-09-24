@@ -3,23 +3,26 @@ spring:
     name: office-shuttle-booking
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/office_shuttle}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
+    url: ${DB_URL:jdbc:h2:mem:shuttledb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;NON_KEYWORDS=USER}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: ${DDL_AUTO:update}
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-        default_schema: public
 
   flyway:
-    enabled: true
+    enabled: ${FLYWAY_ENABLED:false}
     locations: classpath:db/migration
     baseline-on-migrate: true
 
@@ -31,12 +34,11 @@ spring:
       timeout: 5000ms
 
   cache:
-    type: redis
-    redis:
-      time-to-live: 300000   # 5 minutes in ms
+    type: ${CACHE_TYPE:simple}
+
 
 server:
-  port: 8080
+  port: ${PORT:9090}
   error:
     include-message: never
     include-stacktrace: never

@@ -34,6 +34,11 @@ spring:
 server:
   port: 9090
 
+management:
+  health:
+    redis:
+      enabled: false
+
 jwt:
   secret: local-dev-secret-key-at-least-256-bits-long-for-testing-only
   expiration-ms: 86400000
